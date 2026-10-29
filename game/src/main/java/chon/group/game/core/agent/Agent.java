@@ -1,0 +1,269 @@
+package chon.group.game.core.agent;
+
+import java.util.List;
+
+import chon.group.game.core.weapon.Shot;
+import chon.group.game.core.weapon.Weapon;
+import chon.group.game.messaging.Message;
+import chon.group.game.sound.Sound;
+
+/**
+ * Represents an agent in the game, with properties such as position, size,
+ * speed, and image.
+ * The agent can move in specific directions and chase a target.
+ */
+public class Agent extends Entity {
+
+    /** The time of the last hit taken. */
+    private long lastHitTime = 0;
+
+    /** Flag to control the invulnerability status of the agent. */
+    private boolean invulnerable = false;
+
+    /* Invulnerability (in milliseconds) */
+    private long cooldown = 1000;
+
+    /** The Agent's Weapon */
+    private Weapon weapon;
+
+    /** Whether this agent's movement is driven by an external client instead of AI. */
+    private boolean externallyControlled = false;
+
+    /** The initial agent's energy */
+    private double energy;
+
+    /** The maximum agent's energy. */
+    private final double fullEnergy;
+
+    /** The agent's energy recovery factor */
+    private double recoveryFactor;
+
+    /**
+     * Constructor to initialize the agent properties including its direction.
+     *
+     * @param posX      the agent's initial X (horizontal) position
+     * @param posY      the agent's initial Y (vertical) position
+     * @param speed     the agent's speed
+     * @param health    the agent's health
+     * @param pathImage the path to the agent's image
+     * @param flipped   the agent's direction (RIGHT=0 or LEFT=1)
+     */
+    public Agent(
+            int posX,
+            int posY,
+            int width,
+            int height,
+            double ratio,
+            int speed,
+            int health,
+            Direction direction,
+            boolean flipped,
+            boolean visibleBars) {
+        super(posX, posY, width, height, ratio, speed, health, direction, flipped, visibleBars);
+        this.energy = 1.0;
+        this.fullEnergy = 1.0;
+        this.recoveryFactor = 0.0002;
+    }
+
+    public Agent(
+            int posX,
+            int posY,
+            int width,
+            int height,
+            double ratio,
+            int speed,
+            int health,
+            Direction direction,
+            boolean flipped,
+            boolean visibleBars,
+            long recoveryFactor,
+            long cooldown) {
+        super(posX, posY, width, height, ratio, speed, health, direction, flipped, visibleBars);
+        this.energy = 1.0;
+        this.fullEnergy = 1.0;
+        this.recoveryFactor = recoveryFactor;
+        this.cooldown = cooldown;
+    }
+
+    /**
+     * Gets if this agent's movement is driven by an external client.
+     *
+     * @return if the agent is externally controlled
+     */
+    public boolean isExternallyControlled() {
+        return externallyControlled;
+    }
+
+    /**
+     * Sets whether this agent's movement is driven by an external client.
+     *
+     * @param externallyControlled the new externally controlled status
+     */
+    public void setExternallyControlled(boolean externallyControlled) {
+        this.externallyControlled = externallyControlled;
+    }
+
+    /**
+     * Gets if the agent is invulnerable.
+     *
+     * @return if the agent is invulnerable
+     */
+    public boolean isInvulnerable() {
+        return invulnerable;
+    }
+
+    /**
+     * Sets the agent invulnerable status.
+     *
+     * @param invulnerable the new invulnerable status
+     */
+    public void setInvulnerable(boolean invulnerable) {
+        this.invulnerable = invulnerable;
+    }
+
+    /**
+     * Gets the agent's weapon.
+     *
+     * @return its weapon.
+     */
+    public Weapon getWeapon() {
+        return weapon;
+    }
+
+    /**
+     * Sets the agent new weapon.
+     *
+     * @param weapon the new weapon
+     */
+    public void setWeapon(Weapon weapon) {
+        this.weapon = weapon;
+    }
+
+    /**
+     * Gets the current energy level (0.0 to 1.0).
+     *
+     * @return current energy level
+     */
+    public double getEnergy() {
+        return energy;
+    }
+
+    public void setEnergy(double energy) {
+        this.energy = energy;
+    }
+
+    /**
+     * Gets the maximum energy capacity.
+     *
+     * @return maximum energy
+     */
+    public double getFullEnergy() {
+        return fullEnergy;
+    }
+
+    public double getRecoveryFactor() {
+        return recoveryFactor;
+    }
+
+    /**
+     * Consumes a specified amount of energy.
+     *
+     * @param amount the amount of energy to consume
+     */
+    public void consumeEnergy(double amount) {
+        this.energy = Math.max(0, this.energy - amount);
+    }
+
+    /**
+     * Recovers a specified amount of energy.
+     *
+     * @param amount the amount of energy to recover
+     */
+    public void recoverEnergy() {
+        this.energy = Math.min(this.fullEnergy, (this.energy + this.recoveryFactor));
+    }
+
+    /**
+     * Checks if energy is empty.
+     *
+     * @return true if energy is 0 or less
+     */
+    public boolean isEnergyEmpty() {
+        return this.energy <= 0;
+    }
+
+    /**
+     * Gets if the agent is dead.
+     *
+     * @return if the agent is dead
+     */
+    public boolean isDead() {
+        return (this.isTerminated());
+    }
+
+    /**
+     * Makes the agent take damage.
+     * If health reaches 0, the game must end.
+     *
+     * @param damage the amount of damage to be applied
+     */
+    @Override
+    public void takeDamage(int damage, List<Message> messages, List<Sound> sounds) {
+        this.invulnerable = this.updateInvulnerability();
+        if (!this.invulnerable) {
+            super.takeDamage(damage, messages, sounds);
+            this.lastHitTime = System.currentTimeMillis();
+        }
+    }
+
+    /**
+     * Method to update the invulnerable status.
+     *
+     * @return if the agent is still invulnerable
+     */
+    private boolean updateInvulnerability() {
+        if (System.currentTimeMillis() - lastHitTime >= cooldown) {
+            return false;
+        }
+        return true;
+    }
+
+    public Shot useWeapon() {
+        if (this.weapon == null || this.energy < this.weapon.getEnergyCost()) {
+            return null;
+        }
+
+        boolean isFlipped = this.getAnimationState().isFlipped();
+        Shot shot = this.weapon.fire(
+                isFlipped ? this.getFlippedPosX() : this.getPosX(),
+                this.getPosY(),
+                this.getWidth(),
+                isFlipped ? Direction.LEFT : Direction.RIGHT);
+        if (shot != null) {
+            this.setStatus(EntityStatus.ATTACK);
+            this.consumeEnergy(this.weapon.getEnergyCost());
+        }
+        return shot;
+    }
+
+    public Agent copy(int posX, int posY) {
+        Agent copy = new Agent(
+                posX,
+                posY,
+                this.getWidthOffset(),
+                this.getHeight(),
+                this.getHitbox().getRatio(),
+                this.getSpeed(),
+                this.getHealth(),
+                this.getDirection(),
+                this.getAnimationState().isFlipped(),
+                this.isVisibleBars());
+        copy.setFullHealth(this.getFullHealth());
+        copy.setStatus(this.getStatus());
+        copy.setAnimationSet(this.getAnimationSet());
+        copy.setSoundSet(this.getSoundSet());
+        copy.getAnimationState().setCurrentAnimation(this.getAnimationState().getCurrentAnimation());
+        return copy;
+    }
+
+}

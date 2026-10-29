@@ -1,0 +1,32 @@
+module chon.group {
+    requires transitive javafx.controls;
+    requires transitive javafx.graphics;
+    requires transitive javafx.media;
+    requires java.desktop;
+    /* Dependencies for loading the game with Jackson. */
+    requires com.fasterxml.jackson.databind;
+    requires com.fasterxml.jackson.annotation;
+
+    /* Dependencies for the game gateway. */
+    opens chon.group.game.loader.config.level to com.fasterxml.jackson.databind;
+    opens chon.group.game.gateway to com.fasterxml.jackson.databind;
+    opens chon.group.game.loader to com.fasterxml.jackson.databind;
+
+    opens chon.group.game.loader.config.media to com.fasterxml.jackson.databind;
+    opens chon.group.game.loader.config.media.animation to com.fasterxml.jackson.databind;
+    opens chon.group.game.loader.config.media.screen to com.fasterxml.jackson.databind;
+    opens chon.group.game.loader.config.media.sound to com.fasterxml.jackson.databind;
+    opens chon.group.game.loader.config.entity to com.fasterxml.jackson.databind;
+    opens chon.group.game.loader.config.entity.agent to com.fasterxml.jackson.databind;
+    opens chon.group.game.loader.config.entity.object to com.fasterxml.jackson.databind;
+    opens chon.group.game.loader.config.entity.weapon to com.fasterxml.jackson.databind;
+    opens chon.group.game.loader.config.environment to com.fasterxml.jackson.databind;
+    opens chon.group.game.loader.config.environment.menu to com.fasterxml.jackson.databind;
+    opens chon.group.game.loader.config.environment.camera to com.fasterxml.jackson.databind;
+    opens chon.group.game.loader.config.environment.ui to com.fasterxml.jackson.databind;
+    opens chon.group.game.loader.config.platform to com.fasterxml.jackson.databind;
+
+    opens chon.group.game.core.platform.config to com.fasterxml.jackson.databind;
+
+    exports chon.group;
+}

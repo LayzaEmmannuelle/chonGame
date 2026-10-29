@@ -1,0 +1,75 @@
+package chon.group.game.core.weapon;
+
+import chon.group.game.animation.AnimationSet;
+import chon.group.game.animation.AnimationType;
+import chon.group.game.core.agent.Direction;
+
+public class ConcreteWeapon extends Weapon {
+
+    private ConcreteShot shot;
+
+    public ConcreteWeapon(
+            int posX,
+            int posY,
+            int width,
+            int height,
+            int speed,
+            int health,
+            double energyCost,
+            boolean flipped,
+            ConcreteShot shot) {
+        super(posX, posY, width, height, speed, health, energyCost, flipped);
+        this.shot = shot;
+    }
+
+    public ConcreteWeapon(
+            int offsetPosY,
+            int width,
+            int height,
+            int speed,
+            int health,
+            double energyCost,
+            boolean flipped,
+            long cooldown,
+            ConcreteShot shot) {
+        super(offsetPosY, width, height, speed, health, energyCost, flipped, cooldown);
+        this.shot = shot;
+    }
+
+    public ConcreteShot getShot() {
+        return shot;
+    }
+
+    @Override
+    protected Shot createShot(int posX, int posY, int entityWidth, Direction direction) {
+        if (direction.equals(Direction.RIGHT))
+            posX += (entityWidth + 1);
+        else
+            posX -= (entityWidth + this.shot.getWidth() + 1);
+        AnimationSet animationSet = this.shot.getAnimationSet();
+        this.shot.getAnimationState().setCurrentAnimation(animationSet.get(AnimationType.IDLE));
+        int height, width;
+        if (!this.shot.isVisible()) {
+            height = this.shot.getHitbox().getHeight();
+            width = this.shot.getHitbox().getWidth();
+        } else {
+            height = this.shot.getHeight();
+            width = this.shot.getWidth();
+        }
+        ConcreteShot shot = new ConcreteShot(
+                posX,
+                posY + this.getOffsetPosY(),
+                height,
+                width,
+                this.shot.getSpeed(),
+                this.shot.getHealth(),
+                direction,
+                false,
+                this.shot.getDamage(),
+                this.shot.getRange());
+        shot.setAnimationSet(animationSet);
+        shot.getAnimationState().setCurrentAnimation(animationSet.get(AnimationType.IDLE));
+        return shot;
+    }
+
+}
